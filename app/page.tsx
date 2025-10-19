@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Palette, Copy, Check, Sparkles, Zap, Flame, Droplet, Sun, Moon, Star, Cpu, Heart, Eye, Music } from 'lucide-react'
+import { Palette, Copy, Check, Sparkles, Zap, Flame, Droplet, Sun, Moon, Star, Cpu, Heart, Eye, Music, ClipboardCopy } from 'lucide-react'
 
 interface ColorPalette {
   name: string
@@ -337,6 +337,8 @@ export default function Home() {
   const allPalettes = mode === "dark" ? darkPalettes : lightPalettes
   const [activePalette, setActivePalette] = useState<ColorPalette>(darkPalettes[0])
   const [copiedColor, setCopiedColor] = useState<string | null>(null)
+  const [copiedPaletteName, setCopiedPaletteName] = useState<string | null>(null)
+
   const [categoryFilter, setCategoryFilter] = useState<string>("All")
   const [searchTerm, setSearchTerm] = useState("")
 
@@ -356,10 +358,16 @@ export default function Home() {
     })
   }, [allPalettes, categoryFilter, searchTerm])
 
-  const copyToClipboard = (color: string) => {
-    navigator.clipboard.writeText(color)
-    setCopiedColor(color)
-    setTimeout(() => setCopiedColor(null), 2000)
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+  }
+
+  const handleCopyPalette = (e: React.MouseEvent, palette: ColorPalette) => {
+    e.stopPropagation() // Prevent the Card's onClick from firing
+    const formattedPalette = `Primary: ${palette.primary}\nSecondary: ${palette.secondary}\nTertiary: ${palette.tertiary}\nText: ${palette.text}\nAccent: ${palette.accent}`
+    copyToClipboard(formattedPalette)
+    setCopiedPaletteName(palette.name)
+    setTimeout(() => setCopiedPaletteName(null), 2000)
   }
 
   const IconComponent = activePalette.icon
@@ -490,7 +498,9 @@ export default function Home() {
                     ? `0 0 30px ${palette.accent}50, 0 8px 30px ${palette.primary}80`
                     : `0 4px 15px ${palette.primary}60`
                 }}
-                onClick={() => setActivePalette(palette)}
+                // onClick={() => setActivePalette(palette)}
+                // Removed onClick from Card to allow copy button to handle click
+
               >
                 <div className="p-4">
                   <div className="flex items-center gap-2 mb-3">
@@ -534,18 +544,32 @@ export default function Home() {
                     />
                   </div>
 
-                  {activePalette.name === palette.name && (
-                    <Badge 
-                      className="w-full justify-center text-xs"
-                      style={{ 
-                        backgroundColor: palette.accent,
-                        color: mode === "dark" ? palette.primary : "#ffffff",
-                        boxShadow: `0 0 10px ${palette.accent}60`
+                  <div className="flex justify-between items-center mt-3">
+                    {activePalette.name === palette.name && (
+                      <Badge 
+                        className="justify-center text-xs"
+                        style={{ 
+                          backgroundColor: palette.accent,
+                          color: mode === "dark" ? palette.primary : "#ffffff",
+                          boxShadow: `0 0 10px ${palette.accent}60`
+                        }}
+                      >
+                        Active
+                      </Badge>
+                    )}
+                    <button
+                      onClick={(e) => handleCopyPalette(e, palette)}
+                      className="flex items-center gap-1 px-3 py-1 rounded-md text-xs font-medium transition-colors duration-200"
+                      style={{
+                        backgroundColor: copiedPaletteName === palette.name ? palette.accent : palette.tertiary,
+                        color: copiedPaletteName === palette.name ? (mode === "dark" ? palette.primary : "#ffffff") : palette.text,
+                        boxShadow: copiedPaletteName === palette.name ? `0 0 10px ${palette.accent}60` : 'none'
                       }}
                     >
-                      Active
-                    </Badge>
-                  )}
+                      {copiedPaletteName === palette.name ? <Check size={14} /> : <ClipboardCopy size={14} />}
+                      {copiedPaletteName === palette.name ? "Copied!" : "Copy"}
+                    </button>
+                  </div>
                 </div>
               </Card>
             )
