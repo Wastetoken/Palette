@@ -1,9 +1,20 @@
 "use client"
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Palette, Copy, Check, Sparkles, Zap, Flame, Droplet, Sun, Moon, Star, Cpu, Heart, Eye, Music, ClipboardCopy } from 'lucide-react'
+
+const PREVIEW_LIGHT_URL = "https://pub-2c48e52ae2c54d5187aa934d1e428bd2.r2.dev/Untitled424_20251021160557.png"
+const PREVIEW_DARK_URL = "https://pub-2c48e52ae2c54d5187aa934d1e428bd2.r2.dev/Untitled424_20251005.png"
+
+const HEADER_LIGHT_URL = "https://pub-2c48e52ae2c54d5187aa934d1e428bd2.r2.dev/Untitled424_20251021160557.png"
+const HEADER_DARK_URL = "https://pub-2c48e52ae2c54d5187aa934d1e428bd2.r2.dev/Untitled424_20251021160549.png"
+const COPY_PASTE_URL = "https://pub-2c48e52ae2c54d5187aa934d1e428bd2.r2.dev/Untitled424_20251021161005.png"
+
+function formatPaletteForClipboard(palette: ColorPalette) {
+  return `Primary: ${palette.primary}\nSecondary: ${palette.secondary}\nTertiary: ${palette.tertiary}\nText: ${palette.text}\nAccent: ${palette.accent}`;
+}
 
 interface ColorPalette {
   name: string
@@ -338,9 +349,19 @@ export default function Home() {
   const [activePalette, setActivePalette] = useState<ColorPalette>(darkPalettes[0])
   const [copiedColor, setCopiedColor] = useState<string | null>(null)
   const [copiedPaletteName, setCopiedPaletteName] = useState<string | null>(null)
+  const [scrollPosition, setScrollPosition] = useState(0)
 
   const [categoryFilter, setCategoryFilter] = useState<string>("All")
   const [searchTerm, setSearchTerm] = useState("")
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const position = window.scrollY
+      setScrollPosition(position)
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const toggleMode = () => {
     const newMode = mode === "dark" ? "light" : "dark"
@@ -363,8 +384,8 @@ export default function Home() {
   }
 
   const handleCopyPalette = (e: React.MouseEvent, palette: ColorPalette) => {
-    e.stopPropagation() // Prevent the Card's onClick from firing
-    const formattedPalette = `Primary: ${palette.primary}\nSecondary: ${palette.secondary}\nTertiary: ${palette.tertiary}\nText: ${palette.text}\nAccent: ${palette.accent}`
+    e.stopPropagation()
+    const formattedPalette = formatPaletteForClipboard(palette)
     copyToClipboard(formattedPalette)
     setCopiedPaletteName(palette.name)
     setTimeout(() => setCopiedPaletteName(null), 2000)
@@ -372,21 +393,31 @@ export default function Home() {
 
   const IconComponent = activePalette.icon
 
+  const imageScale = scrollPosition > 100 ? 0.1 : 1
+  const imageOpacity = scrollPosition > 150 ? 0 : 1
+
   return (
     <div 
       className="min-h-screen transition-colors duration-500"
       style={{ backgroundColor: activePalette.primary }}
     >
+      <style jsx>{`
+        .copy-paste-image {
+          transition: transform 0.5s ease, opacity 0.5s ease;
+          transform: scale(${imageScale});
+          opacity: ${imageOpacity};
+          max-width: 100%;
+          height: auto;
+        }
+      `}</style>
       <div className="max-w-[1600px] mx-auto px-6 py-12">
         <header className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <IconComponent size={48} style={{ color: activePalette.accent }} />
-            <h1 
-              className="text-6xl font-bold"
-              style={{ color: activePalette.text }}
-            >
-              {mode === "dark" ? "Dark" : "Light"} Palette Studio
-            </h1>
+            <img 
+              src={mode === "light" ? HEADER_LIGHT_URL : HEADER_DARK_URL} 
+              alt={`${mode} Palette Studio`} 
+              className="h-16 object-contain" 
+            />
           </div>
           <p 
             className="text-xl mb-2"
@@ -484,6 +515,12 @@ export default function Home() {
           </div>
         </div>
 
+        <img 
+          src={COPY_PASTE_URL} 
+          alt="Copy & Paste" 
+          className="mx-auto mb-4 copy-paste-image" 
+        />
+
         <div className="grid xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 gap-4 mb-12">
           {filteredPalettes.map((palette, index) => {
             const PaletteIcon = palette.icon
@@ -498,9 +535,7 @@ export default function Home() {
                     ? `0 0 30px ${palette.accent}50, 0 8px 30px ${palette.primary}80`
                     : `0 4px 15px ${palette.primary}60`
                 }}
-                // onClick={() => setActivePalette(palette)}
-                // Removed onClick from Card to allow copy button to handle click
-
+                onClick={() => setActivePalette(palette)}
               >
                 <div className="p-4">
                   <div className="flex items-center gap-2 mb-3">
